@@ -115,6 +115,9 @@
 
       var kEpsilon = 0.001;
       function Compare(a, b, pre) {
+        if (b.isVector3) {
+          b = [b.x, b.y, b.z];
+        }
         if (b.m11) {
           b = [
             b.m11, b.m12, b.m13, b.m14,
@@ -168,16 +171,18 @@
   </head>
   <body>
     <p>
-      This page benchmarks the performance of several matrix libraries intended for use with WebGL:<br>
-      <a href="https://github.com/toji/gl-matrix">glMatrix</a> (v1.2, 2011-12-13), 
+      This page benchmarks the performance of a collection of matrix libraries most of which are intended for use with WebGL:<br>
+      <a href="https://github.com/toji/gl-matrix">glMatrix</a> (v2.3.2, 2016-7-20),
       <a href="http://code.google.com/p/webgl-mjs/">mjs</a> (rev 16, 2010-12-15),
       CanvasMatrix, 
-      <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a> (rev 32, 2011-03-15),<br>
-      and the math utilities in Google's <a href="http://closure-library.googlecode.com/">Closure</a> (svn rev: 1364, 2011-11-3)
-      and <a href="https://github.com/greggman/tdl">tdl</a> (commit: 59d484f, 2011-06-03).<br/>
+      <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a> (rev 32, 2011-03-15),
+      the math utilities in Google's <a href="http://closure-library.googlecode.com/">Closure</a> (svn rev: 1364, 2011-11-3),
+      <a href="https://github.com/greggman/tdl">tdl</a> (commit: 59d484f, 2011-06-03), and
+      <a href="https://github.com/greggman/twgl.js">twgl.js</a> (v3.3.0, 2017-05-05), and
+      <a href="http://sylvester.jcoglan.com/">Sylvester</a> (v0.1.3, 2007-07-05).<br>
       Benchmarks for each library are run in an iframe. Results measure millions of iterations per second of the target operation.<br/>
     </p>
-    <div id="graph" style="width:900px;height:400px;margin:10px"></div>
+    <div id="graph" style="width:900px;height:600px;margin:10px"></div>
     <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
       <table id='data-table' class='sortable'>
         <thead id="data-table-head">
@@ -187,8 +192,9 @@
       </table>
     </div>
     <p><em>
-      Adapted by Stephen Bannasch from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.<br/>
-      Additional improvements by Gregg Tavares.<br/>
+      Adapted by Stephen Bannasch from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.<br>
+      Additional improvements by Gregg Tavares.<br>
+      Sylvester benchmarks by <a href="mailto:felix.klee@inka.de">Felix E. Klee.</a><br/>
       JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>;
       <a href="http://tetlaw.id.au/view/blog/table-sorting-with-prototype/">Sortable Table</a> by Andrew Tetlaw.<br/>
       The source code for these benchmarks can be found here on <a href="https://github.com/stepheneb/webgl-matrix-benchmarks">github</a>. Pull requests quite welcome!<br/>
@@ -200,14 +206,25 @@
     <script type="text/javascript">
 
       testURLs = [
-        {name: 'glMatrix',     url: 'libs/glMatrix/glMatrix.html'        },
-        {name: 'mjs',          url: 'libs/mjs/mjs.html'                  },
-        {name: 'CanvasMatrix', url: 'libs/CanvasMatrix/CanvasMatrix.html'},
-        {name: 'EWGL',         url: 'libs/EWGL_math/EWGL_math.html'      },
-        {name: 'TDLMath',      url: 'libs/tdl/tdl-math.html'             },
-        {name: 'TDLFast',      url: 'libs/tdl/tdl-fast.html'             },
-        {name: 'closure',      url: 'libs/closure/closure.html'          }
+        {name: 'Three',             url: 'libs/three.js/three.js.html'         },
+        {name: 'glMatrix',          url: 'libs/glMatrix/glMatrix.html'         },
+        {name: 'glMatrix-native',   url: 'libs/glMatrix/glMatrix.html#native'  },
+        {name: 'glMatrix-float64',  url: 'libs/glMatrix/glMatrix.html#float64' },
+        {name: 'mjs',               url: 'libs/mjs/mjs.html'                   },
+        {name: 'CanvasMatrix',      url: 'libs/CanvasMatrix/CanvasMatrix.html' },
+        {name: 'EWGL',              url: 'libs/EWGL_math/EWGL_math.html'       },
+        {name: 'TDLMath',           url: 'libs/tdl/tdl-math.html'              },
+        {name: 'TDLFast',           url: 'libs/tdl/tdl-fast.html'              },
+        {name: 'closure',           url: 'libs/closure/closure.html'           },
+        {name: 'Three',             url: 'libs/three.js/three.js.html'         },
+        {name: 'twgl-math',         url: 'libs/twgl-math/twgl-math.html'       },
+        {name: 'twgl-math-native',  url: 'libs/twgl-math/twgl-math.html#native'},
+        {name: 'twgl',              url: 'libs/twgl/twgl.html'                 },
+        {name: 'twgl-native',       url: 'libs/twgl/twgl-native.html'          },
+        {name: 'twgl-float64',      url: 'libs/twgl/twgl-float64.html'         },
+        {name: 'Sylvester',         url: 'libs/Sylvester/Sylvester.html'       },
       ];
+      var libraries = testURLs.map(function(t) { return t.name;});
 
       var waiting = 1;
 
@@ -238,6 +255,9 @@
           var testInfo = testURLs[ii];
           var tests = testInfo.iframe.contentWindow.tests;
           for (var testName in tests) {
+            //if (testName !== 'Scaling') {
+            //  continue;
+            //}
             if (!sets[testName]) {
               sets[testName] = [];
             }
@@ -269,7 +289,10 @@
         '#118800',
         '#770099',
         '#aa4400',
-        '#008877'
+        '#008877',
+        '#880077',
+        '#887700',
+        '#578800',
       ];
 
       function plotBenchmarks() {
@@ -307,7 +330,7 @@
                 noTics: benchmarks.length,
                 min: 0, max: benchmarks.length - 1,
               },
-              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 40 },
+              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 120 },
               title: "WebGL Matrix Library Benchmark",
               subtitle: "Millions of iterations per second averaged over 10 runs (higher is better)",
               grid:{ verticalLines: true, backgroundColor: 'white' },
@@ -331,8 +354,6 @@
 
       var data_table_head = document.getElementById("data-table-head");
       var data_table_body = document.getElementById("data-table-body");
-
-      var libraries = ["glMatrix", "mjs", "CanvasMatrix", "EWGL", "TDLMath",  "TDLFast", "closure"];
 
       function library_to_id(library) {
         return library.toLowerCase().replace(/\W/g, '_');
