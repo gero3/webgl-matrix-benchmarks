@@ -108,6 +108,7 @@
           { test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var v1 = new THREE.Vector3(1, 2, 3);
+            v1.normalize();
             var tm = new THREE.Matrix4();
             var a = Math.PI/2;
             var start = performance.now();
